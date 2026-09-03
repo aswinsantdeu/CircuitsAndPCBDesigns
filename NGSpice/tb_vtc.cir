@@ -1,0 +1,126 @@
+*==================================
+* tb_vtc.cir
+* DC voltage transfere characteristics for 3.3 V CMOS Inverter
+*==================================
+
+.include "cmos_inverter_3p3.sub"
+
+** PARAM/OPTION section **
+
+.param temp=25
+.param AVDD_VAL=3.3
+.param CL_VAL=100f
+
+*Instantiation Section **
+
+VDD avdd 0 DC {AVDD_VAL}
+VIN vin 0 DC 0
+CL vout 0 {CL_VAL}
+
+XINV vin vout avdd 0 cmos_inverter_3p3
+
+** Analysis Section **
+.control
+set filetype=ascii
+set wr_singlescale
+set appendwrite
+
+echo "============================================="
+echo "Running DC VTC sweep "
+echo "VIN: 0V to 3.3V , step of 10mV"
+echo "========================================"
+
+dc VIN 0 3.3 0.01
+
+** Measurement Section **
+let IDD_abs = abs(i(VDD))
+let dVOUT_dVIN = deriv(v(vout))
+
+* Output logic levels
+meas dc VOH FIND v(vout) AT=0
+meas dc VOL FIND v(vout) AT=3.29
+
+*Static supply current magnitudes at logic endpoints
+meas dc IDD_LOW_abs FIND IDD_abs AT=0
+meas dc IDD_HIGH_abs FIND IDD_abs AT=3.29
+
+
+* Switching threshold : input voltage where VOUT=VIN
+meas dc VM FIND v(vin) WHEN v(vout)=v(vin) CROSS=1
+
+* Noise-margin boundary points where dVOUT_dVIN=-1
+meas dc VIL FIND v(vin) WHEN dVOUT_dVIN =-1 CROSS=1
+meas dc VIH FIND v(vin) WHEN dVOUT_dVIN =-1 CROSS=2
+
+*Noise margins
+let NML = VIL - VOL
+let NMH = VOH - VIH
+
+** Reporting section **
+echo "==================================================="
+echo "Measured DC VTC Results"
+echo "==================================================="
+
+print VOH
+print VOL
+print VM
+print VIL
+print VIH
+print NML
+print NMH
+print IDD_LOW_abs
+print IDD_HIGH_abs
+
+
+* Export DC sweep data
+* Export final DC CSV with exact required schema
+echo "VIN_V,VOUT_V,IDD_abs_A,dVOUT_dVIN" > dc_vtc.csv
+
+let npts = length(v(vin))
+let idx = 0
+
+while idx < npts
+  let vin_i = v(vin)[idx]
+  let vout_i = v(vout)[idx]
+  let idd_i = IDD_abs[idx]
+  let slope_i = dVOUT_dVIN[idx]
+
+  echo "$&vin_i,$&vout_i,$&idd_i,$&slope_i" >> dc_vtc.csv
+
+  let idx = idx + 1
+end
+
+
+* Export DC measurements to consolidated measurement CSV
+echo "metric,value,unit,analysis_type,condition,measurement_method,source_file,pass_fail" > cmos_inverter_measurements.csv
+
+echo "" >> cmos_inverter_measurements.csv
+echo "SECTION,DC Measurements,,,,,,," >> cmos_inverter_measurements.csv
+echo "" >> cmos_inverter_measurements.csv
+
+echo "VOH,$&VOH,V,dc,VIN=0V,Ngspice .meas FIND at VIN=0V,tb_vtc.cir,pass" >> cmos_inverter_measurements.csv
+echo "VOL,$&VOL,V,dc,VIN=3.29V,Ngspice .meas FIND at VIN=3.29V,tb_vtc.cir,pass" >> cmos_inverter_measurements.csv
+echo "VM,$&VM,V,dc,VOUT=VIN crossing,Ngspice .meas WHEN crossing,tb_vtc.cir,pass" >> cmos_inverter_measurements.csv
+echo "VIL,$&VIL,V,dc,lower dVOUT/dVIN=-1 crossing,Ngspice .meas derivative crossing,tb_vtc.cir,pass" >> cmos_inverter_measurements.csv
+echo "VIH,$&VIH,V,dc,upper dVOUT/dVIN=-1 crossing,Ngspice .meas derivative crossing,tb_vtc.cir,pass" >> cmos_inverter_measurements.csv
+echo "NML,$&NML,V,dc,VIL-VOL,Ngspice vector calculation,tb_vtc.cir,pass" >> cmos_inverter_measurements.csv
+echo "NMH,$&NMH,V,dc,VOH-VIH,Ngspice vector calculation,tb_vtc.cir,pass" >> cmos_inverter_measurements.csv
+echo "IDD_LOW_abs,$&IDD_LOW_abs,A,dc,VIN=0V,Ngspice .meas abs supply current,tb_vtc.cir,pass" >> cmos_inverter_measurements.csv
+echo "IDD_HIGH_abs,$&IDD_HIGH_abs,A,dc,VIN=3.29V,Ngspice .meas abs supply current,tb_vtc.cir,pass" >> cmos_inverter_measurements.csv
+
+
+
+
+plot v(vout) vs v(vin) title "VTC: VOUT vs VIN"
+plot IDD_abs vs v(vin) title "DC Supply Current: IDD_abs vs VIN"
+
+echo "==================================================="
+echo "DC VTC complete."
+echo "Generated:"
+echo "  dc_vtc.csv"
+echo "  cmos_inverter_measurements.csv"
+echo "==================================================="
+
+.endc
+.end
+

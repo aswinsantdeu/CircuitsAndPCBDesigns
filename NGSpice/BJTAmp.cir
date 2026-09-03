@@ -1,0 +1,57 @@
+* Common-emitter BJT amplifier using external 2N2222 model
+* Supply = 12 V, target gain = 18 to 22 V/V, load = 10k
+
+.model 2N2222 NPN(IS=14.34f BF=400 Vaf=74.03 Ikr=0 Isc=0 Ise=14.34f Ne=1.307 Br=6.092 + Nc=2 Var=0 Ikr=0 Re=0 Rb=10 Rc=1 Cje=22.01p Vje=.75 Mje=.377 + Cjc=7.306p Vjc=.75 Mjc=.3416 Tf=411.1p Xtf=3 Vtf=1.7 Itf=.6 + Tr=46.91n Eg=1.14 Xti=3)
+
+VCC vcc 0 DC 12
+VIN vin_src 0 SIN(0 10m 1k) AC 1
+
+* Input coupling
+CIN vin_src base 2.2u
+
+* Bias divider
+R1 vcc base 82k
+R2 base 0 10k
+
+* Collector and emitter network
+RC vcc collector 10k
+RE1 emitter emit_ac 180
+RE2 emit_ac 0 1k
+CE emit_ac 0 100u
+
+* BJT
+* If your model name is different, replace 2N2222 below with the exact model name in the .lib file
+Q1 collector base emitter 2N2222
+
+* Output coupling and load
+COUT collector vout 10u
+RL vout 0 10k
+
+.control
+
+
+set filetype=ascii
+
+op
+print v(base) v(emitter) v(collector) v(vout)
+print v(base)-v(emitter)
+print v(collector)-v(emitter)
+print @q1[ic] @q1[ib]
+
+
+tran 2u 8m 5m
+plot v(vin_src) v(vout)
+
+ac dec 100 10 100Meg
+let gain_db = db(v(vout)/v(vin_src))
+let phase_deg = 180/pi*cph(v(vout)/v(vin_src))
+plot gain_db 
+plot phase_deg
+
+
+meas ac gain_1k_db FIND gain_db AT=1k
+meas ac phase_1k_deg FIND phase_deg AT=1k
+
+.endc
+
+.end

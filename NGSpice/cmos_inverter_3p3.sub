@@ -1,0 +1,9 @@
+.include "nmos_t.txt"
+.include "pmos_t.txt"
+
+.subckt cmos_inverter_3p3 VIN VOUT AVDD AGND
+
+XMN1 VOUT VIN AGND AGND nmos_3p3 W=8u L=0.28u
+XMP1 VOUT VIN AVDD AVDD pmos_3p3 W=8u L=0.28u
+
+.ends cmos_inverter_3p3

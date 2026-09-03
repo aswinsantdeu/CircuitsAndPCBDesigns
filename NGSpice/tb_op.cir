@@ -1,0 +1,83 @@
+*=======================================================
+*tb_op.cir
+* operating point checks for VIN=0V , VIN =3.3V and VIN=VM
+*=======================================================
+
+.include "cmos_inverter_3p3.sub"
+
+**PARAM/OPTIONS section **
+.param temp=25
+.param AVDD_VAL=3.3
+.param CL_VAL=100f
+.param VM_VAL=1.517114
+.param VIN_VAL=0
+
+**Instantiation section **
+VDD avdd 0 DC {AVDD_VAL}
+VIN vin 0 DC {VIN_VAL}
+
+XINV vin vout avdd 0 cmos_inverter_3p3
+CL vout 0 {CL_VAL}
+
+**Analysis Section **
+.control
+set filetype=ascii
+
+echo "============================================================" > op_tables.txt
+echo "CMOS Inverter Operating-Point Tables" >> op_tables.txt
+echo "Device subcircuits: NMOS=nmos_3p3, PMOS=pmos_3p3" >> op_tables.txt
+echo "Inverter pin order: VIN VOUT AVDD AGND" >> op_tables.txt
+echo "NMOS: drain=VOUT gate=VIN source=AGND bulk=AGND W/L=8u/1u" >> op_tables.txt
+echo "PMOS: drain=VOUT gate=VIN source=AVDD bulk=AVDD W/L=24u/1u" >> op_tables.txt
+echo "============================================================" >> op_tables.txt
+
+
+echo "==================================="
+echo "Operating Point Check: VIN = 0V"
+echo "==================================="
+op
+print v(vin) v(vout) i(vdd)
+echo "" >> op_tables.txt
+echo "CASE: VIN=0V" >> op_tables.txt
+echo "VIN_V VOUT_V IDD_A" >> op_tables.txt
+print v(vin) v(vout) i(vdd) >> op_tables.txt
+show all >> op_tables.txt
+
+echo "==================================="
+echo "Operating Point Check: VIN = 3.3V"
+echo "==================================="
+alterparam VIN_VAL=3.3
+reset
+op
+print v(vin) v(vout) i(vdd)
+echo "" >> op_tables.txt
+echo "CASE: VIN=3.3V" >> op_tables.txt
+echo "VIN_V VOUT_V IDD_A" >> op_tables.txt
+print v(vin) v(vout) i(vdd) >> op_tables.txt
+show all >> op_tables.txt
+
+echo "==================================="
+echo "Operating Point Check: VIN = VM"
+echo "==================================="
+alterparam VIN_VAL={VM_VAL}
+reset
+op
+print v(vin) v(vout) i(vdd)
+echo "" >> op_tables.txt
+echo "CASE: VIN=VM=1.517114V" >> op_tables.txt
+echo "VIN_V VOUT_V IDD_A" >> op_tables.txt
+print v(vin) v(vout) i(vdd) >> op_tables.txt
+show all >> op_tables.txt
+
+
+echo "==================================="
+echo "Operating-point checks complete."
+echo "Generated:"
+echo "  op_tables.txt"
+echo "==================================="
+
+.endc
+.end
+
+
+

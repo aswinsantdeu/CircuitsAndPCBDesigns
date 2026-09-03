@@ -1,0 +1,55 @@
+* bridge_rectifier_rc_sweep
+* Sensitivity sweep for 0.5x, 1x, and 2x calculated capacitor value
+
+* Diode model
+
+.model D1N4001 D (IS=76.9p RS=42.0m BV=50.0 IBV=5.00u CJO=40.0p VJ=0.6 M=0.333 TT=4.32u)
+
+.param VPK=10
+.param Freq=50
+.param RLOAD=1k
+.param CBASE=1000u
+.param CSMOOTH={CBASE}
+
+Vin ac1 ac2 SIN(0 {VPK} {Freq})
+
+D1 ac1 vout D1N4001
+D2 ac2 vout D1N4001
+D3 0 ac1 D1N4001
+D4 0 ac2 D1N4001
+
+C1 vout 0 {CSMOOTH}
+Rload vout 0 {RLOAD}
+
+.tran 100u 500m 
+
+.control
+set filetype=ascii
+
+echo ==============================
+echo Capacitor sensitivity sweep
+echo ==============================
+
+foreach cval 500u 1000u 2000u
+  alterparam CSMOOTH = $cval
+  reset
+  run
+
+  meas tran VMAX max v(vout) from=300m to=500m
+  meas tran VMIN min v(vout) from=300m to=500m
+  meas tran VAVG avg v(vout) from=300m to=500m
+
+  let VRIPPLE = VMAX - VMIN
+  let RIPPLE_PERCENT = 100*VRIPPLE/VAVG
+
+  echo ---- C = $cval ----
+  print VAVG
+  print VRIPPLE
+  print RIPPLE_PERCENT
+
+  wrdata bridge_rectifier.csv time v(vout)
+end
+
+.endc
+
+.end

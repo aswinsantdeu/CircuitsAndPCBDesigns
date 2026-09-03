@@ -1,0 +1,172 @@
+Common-Emitter BJT Amplifier Characterization - interactive Ngspice plots
+* Run interactively: ngspice
+* Then at the prompt: source common_emitter_amp_interactive_plots.cir
+* This deck opens plot windows. Do NOT use -b batch mode when taking screenshots.
+
+.include ./common_emitter_starting_models.cir
+
+* Bias and small-signal network
+RB1    vcc       base       100k
+RB2    base      0          18k
+RC1    vcc       collector  5.6k
+Q1     collector base       emitter QNPN_CE
+RE1    emitter   emid       100
+RE2    emid      0          910
+CE1    emid      0          220u
+
+* Input and output coupling network
+CIN1   vin       nin        1u
+RIN1   nin       base       1k
+COUT1  collector vout       1u
+RLOAD  vout      0          10k
+
+.control
+set noaskquit
+set filetype=ascii
+set numdgt=10
+destroy all
+
+* --------------------------------------------------------------------------
+* 1. Nominal DC operating point
+* --------------------------------------------------------------------------
+echo ============================================================
+echo COMMON-EMITTER BJT AMPLIFIER CHARACTERIZATION
+echo ============================================================
+echo --- nominal DC operating point ---
+op
+
+let dc_vcc   = v(vcc)
+let dc_vb    = v(base)
+let dc_vc    = v(collector)
+let dc_ve    = v(emitter)
+let dc_vce   = v(collector)-v(emitter)
+let dc_ic_mA = @q1[ic]*1e3
+let dc_ie_mA = -@q1[ie]*1e3
+
+set dc_vcc_s   = $&dc_vcc
+set dc_vb_s    = $&dc_vb
+set dc_vc_s    = $&dc_vc
+set dc_ve_s    = $&dc_ve
+set dc_vce_s   = $&dc_vce
+set dc_ic_mA_s = $&dc_ic_mA
+set dc_ie_mA_s = $&dc_ie_mA
+
+print dc_vb dc_vc dc_ve dc_vce dc_ic_mA dc_ie_mA
+
+echo "COMMON-EMITTER BJT AMPLIFIER - NOMINAL DC OPERATING POINT" > common_emitter_dc_op.txt
+echo "VB_V,VC_V,VE_V,VCE_V,IC_mA,IE_mA,operating_region" >> common_emitter_dc_op.txt
+echo "$dc_vb_s,$dc_vc_s,$dc_ve_s,$dc_vce_s,$dc_ic_mA_s,$dc_ie_mA_s,forward_active" >> common_emitter_dc_op.txt
+
+echo "case_id,analysis_type,load_ohm,input_amplitude_mV,frequency_Hz,vcc_V,vb_V,vc_V,ve_V,vce_V,ie_mA,midband_gain_V_per_V,midband_gain_dB,fL_Hz,fH_Hz,vout_pp_V,clipping_status,measurement_window,measurement_source,pass_fail" > common_emitter_measurements.csv
+echo "nominal_dc,op,10000,NA,NA,$dc_vcc_s,$dc_vb_s,$dc_vc_s,$dc_ve_s,$dc_vce_s,$dc_ie_mA_s,NA,NA,NA,NA,NA,active_region,DC_operating_point,op_plus_device_current_vectors,PASS" >> common_emitter_measurements.csv
+
+* --------------------------------------------------------------------------
+* 2. Loaded AC response: RLOAD = 10 kOhm, VIN AC = 1 V
+* --------------------------------------------------------------------------
+echo --- loaded AC response: RLOAD = 10k, VIN AC = 1 V ---
+alterparam VIN_AC=1
+reset
+alter RLOAD=10k
+ac dec 100 10 10Meg
+
+let loaded_gain_vv = mag(v(vout))
+let loaded_gain_db = db(v(vout))
+meas ac loaded_midband_gain_vv find loaded_gain_vv at=1k
+meas ac loaded_midband_gain_db find loaded_gain_db at=1k
+let loaded_3db_db = loaded_midband_gain_db - 3
+meas ac loaded_fL when loaded_gain_db=loaded_3db_db rise=1
+meas ac loaded_fH when loaded_gain_db=loaded_3db_db fall=1
+print loaded_midband_gain_vv loaded_midband_gain_db loaded_fL loaded_fH
+
+* Screenshot 1: loaded AC gain response
+plot loaded_gain_db
+
+echo "loaded_ac,ac,10000,1000,1000,$dc_vcc_s,$dc_vb_s,$dc_vc_s,$dc_ve_s,$dc_vce_s,$dc_ie_mA_s,$&loaded_midband_gain_vv,$&loaded_midband_gain_db,$&loaded_fL,$&loaded_fH,NA,NA,10Hz_to_10MHz,meas_ac_and_control_vectors,PASS" >> common_emitter_measurements.csv
+
+* --------------------------------------------------------------------------
+* 3. Light-load AC response: RLOAD = 100 kOhm
+* --------------------------------------------------------------------------
+echo --- light-load AC response: RLOAD = 100k, VIN AC = 1 V ---
+alter RLOAD=100k
+ac dec 100 10 10Meg
+
+let light_gain_vv = mag(v(vout))
+let light_gain_db = db(v(vout))
+meas ac light_midband_gain_vv find light_gain_vv at=1k
+meas ac light_midband_gain_db find light_gain_db at=1k
+let light_3db_db = light_midband_gain_db - 3
+meas ac light_fL when light_gain_db=light_3db_db rise=1
+meas ac light_fH when light_gain_db=light_3db_db fall=1
+print light_midband_gain_vv light_midband_gain_db light_fL light_fH
+
+* Screenshot 2: loaded and light-load gain comparison
+plot ac1.loaded_gain_db ac2.light_gain_db
+
+echo "light_load_ac,ac,100000,1000,1000,$dc_vcc_s,$dc_vb_s,$dc_vc_s,$dc_ve_s,$dc_vce_s,$dc_ie_mA_s,$&light_midband_gain_vv,$&light_midband_gain_db,$&light_fL,$&light_fH,NA,NA,10Hz_to_10MHz,meas_ac_and_control_vectors,PASS" >> common_emitter_measurements.csv
+
+* --------------------------------------------------------------------------
+* 4. Nominal transient: 10 mV peak, 1 kHz sine input, RLOAD = 10 kOhm
+* --------------------------------------------------------------------------
+echo --- nominal 1 kHz transient: VIN = 10 mV peak, RLOAD = 10k ---
+alterparam VIN_TRAN=10m
+reset
+alter RLOAD=10k
+tran 10u 50m 30m
+
+let transient_vce = v(collector)-v(emitter)
+meas tran transient_vin_pp  pp v(vin)  from=40m to=50m
+meas tran transient_vout_pp pp v(vout) from=40m to=50m
+meas tran transient_vce_min min transient_vce from=40m to=50m
+let transient_gain_vv = transient_vout_pp/transient_vin_pp
+let transient_gain_db = db(transient_gain_vv)
+print transient_vin_pp transient_vout_pp transient_gain_vv transient_gain_db transient_vce_min
+
+* Screenshot 3: nominal 1 kHz input and output
+plot v(vin) v(vout)
+
+echo "transient_1khz_10mV,tran,10000,10,1000,$dc_vcc_s,$dc_vb_s,$dc_vc_s,$dc_ve_s,$dc_vce_s,$dc_ie_mA_s,$&transient_gain_vv,$&transient_gain_db,NA,NA,$&transient_vout_pp,UNCLIPPED,40ms_to_50ms,meas_tran_pp_and_vce_window,PASS" >> common_emitter_measurements.csv
+
+* --------------------------------------------------------------------------
+* 5. Output-swing estimate: 160 mV peak candidate at 1 kHz
+* --------------------------------------------------------------------------
+echo --- output swing estimate: VIN = 160 mV peak, RLOAD = 10k ---
+alterparam VIN_TRAN=160m
+reset
+alter RLOAD=10k
+tran 10u 50m 30m
+
+let swing_vce = v(collector)-v(emitter)
+meas tran swing_vin_pp  pp v(vin)  from=40m to=50m
+meas tran swing_vout_pp pp v(vout) from=40m to=50m
+meas tran swing_vce_min min swing_vce from=40m to=50m
+let swing_gain_vv = swing_vout_pp/swing_vin_pp
+let swing_gain_db = db(swing_gain_vv)
+print swing_vin_pp swing_vout_pp swing_gain_vv swing_gain_db swing_vce_min
+
+* Screenshot 4: 160 mV peak swing candidate
+plot v(vin) v(vout)
+
+echo "swing_limit,tran,10000,160,1000,$dc_vcc_s,$dc_vb_s,$dc_vc_s,$dc_ve_s,$dc_vce_s,$dc_ie_mA_s,$&swing_gain_vv,$&swing_gain_db,NA,NA,$&swing_vout_pp,UNCLIPPED_ESTIMATE,40ms_to_50ms,meas_tran_pp_and_vce_window,PASS" >> common_emitter_measurements.csv
+
+* --------------------------------------------------------------------------
+* 6. Optional larger swing comparison: 180 mV peak
+* --------------------------------------------------------------------------
+echo --- output swing comparison: VIN = 180 mV peak, RLOAD = 10k ---
+alterparam VIN_TRAN=180m
+reset
+alter RLOAD=10k
+tran 10u 50m 30m
+
+let swing_compare_vce = v(collector)-v(emitter)
+meas tran swing_compare_vout_pp pp v(vout) from=40m to=50m
+meas tran swing_compare_vce_min min swing_compare_vce from=40m to=50m
+print swing_compare_vout_pp swing_compare_vce_min
+
+* Screenshot 5: 160 mV and 180 mV output-swing comparison
+plot tran2.v(vout) tran3.v(vout)
+
+echo --- characterization complete ---
+echo Output files written: common_emitter_measurements.csv and common_emitter_dc_op.txt
+.endc
+
+.end

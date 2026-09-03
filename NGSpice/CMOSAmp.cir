@@ -1,0 +1,55 @@
+* =========================================================
+* Single-Stage CMOS Amplifier
+* NMOS common-source amplifier with PMOS active load
+* =========================================================
+
+.option savecurrents
+.temp 27
+
+* Supply
+VDD vdd 0 5
+
+* Input source
+VIN in 0 DC 2.0 AC 1 SIN(2.0 0.01 1k)
+
+* PMOS gate bias
+VBIAS bias 0 3.0
+
+* Amplifier core
+M1 out in   0   0   NMOS1 W=20u L=1u
+M2 out bias vdd vdd PMOS1 W=40u L=1u
+
+* Load
+CLOAD out 0 10p
+
+* Models
+.model NMOS1 NMOS LEVEL=1 VTO=1.0 KP=120u LAMBDA=0.02
+.model PMOS1 PMOS LEVEL=1 VTO=-1.0 KP=60u  LAMBDA=0.02
+
+.control
+echo "================ OPERATING POINT ================"
+op
+print v(in) v(out) v(bias)
+print @m1[id] @m1[vgs] @m1[vds]
+print @m2[id] @m2[vgs] @m2[vds]
+
+echo "================ TRANSIENT ======================"
+tran 0.1us 5ms
+plot v(in) v(out)
+
+echo "================ AC ANALYSIS ===================="
+ac dec 100 10 100Meg
+plot db(v(out)) phase(v(out))
+
+echo "================ MEASUREMENTS ==================="
+* safer: measure raw output magnitude at 1 kHz
+meas ac vout_1k find vm(out) at=1k
+let gain_db_1k = 20*log10(vout_1k)
+print gain_db_1k
+
+* if AC source magnitude is 1, then |gain| = |V(out)|
+print v(out)
+
+.endc
+
+.end

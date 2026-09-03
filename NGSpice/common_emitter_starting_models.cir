@@ -1,0 +1,29 @@
+* common_emitter_starting_models.cir
+* Starting asset for common-emitter BJT amplifier characterization
+
+.param VCC_NOM=12
+.param VIN_AC=10m
+.param VIN_TRAN=10m
+.param F_MID=1k
+.param RL_NOM=10k
+
+VCC vcc 0 DC {VCC_NOM}
+
+* Small-signal input source placeholder.
+* Designers may reuse node vin as the amplifier input.
+VIN vin 0 DC 0 AC {VIN_AC} SIN(0 {VIN_TRAN} {F_MID})
+
+.model QNPN_CE NPN (
++ IS=1e-14
++ BF=150
++ VAF=100
++ CJE=8p
++ CJC=4p
++ TF=400p
++ TR=50n
++ )
+
+* Expected submitted nodes: vcc, vin, base, collector, emitter, vout, 0.
+* Use the supplied QNPN_CE model for the common-emitter transistor.
+
+.end

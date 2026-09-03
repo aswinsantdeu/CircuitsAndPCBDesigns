@@ -1,0 +1,82 @@
+* ============================================================
+* Transistor RC Phase-Shift Oscillator using external 2n3904.lib
+* Required 2N3904 subcircuit pin order: C B E
+* ============================================================
+
+.include ./2n3904.lib
+
+* ============================================================
+* DC SUPPLY SECTION
+* ============================================================
+VCC vcc 0 DC 12
+
+* ============================================================
+* COMMON-EMITTER AMPLIFIER SECTION
+* ============================================================
+XQ1 collector base emitter 2N3904
+
+RC vcc collector 6.8k
+
+* Small unbypassed emitter resistance improves waveform shape.
+* Bypassed part gives high AC gain for oscillation startup.
+RE1 emitter emit_low 47
+RE2 emit_low 0 1k
+CE  emit_low 0 100u
+
+* ============================================================
+* BASE BIASING SECTION
+* Bias is chosen while considering the final RC feedback resistor.
+* ============================================================
+RB1 vcc base 100k
+RB2 base 0 68k
+
+* ============================================================
+* THREE-STAGE RC PHASE-SHIFT FEEDBACK NETWORK
+* Designed around R = 22k, C = 4.7nF.
+* Ideal oscillation estimate:
+* f ≈ 1 / (2*pi*R*C*sqrt(6)) ≈ 628 Hz
+* ============================================================
+CPS1 collector fb1 4.7n
+RPS1 fb1 0 22k
+
+CPS2 fb1 fb2 4.7n
+RPS2 fb2 0 22k
+
+CPS3 fb2 base 4.7n
+RPS3 base 0 22k
+
+* Small startup kick so deterministic SPICE leaves the DC equilibrium.
+IKICK collector 0 PULSE(0 1u 1m 1u 1u 100u 1s)
+
+* ============================================================
+* OUTPUT SECTION
+* OSC_OUT is the required nonnumeric output node.
+* ============================================================
+COUT collector OSC_OUT 1u
+ROUT OSC_OUT 0 100k
+
+* ============================================================
+* SIMULATION AND OUTPUT COMMANDS
+* ============================================================
+.control
+save v(OSC_OUT) v(collector) v(base) v(fb1) v(fb2) v(emitter)
+
+tran 10u 2s
+
+plot v(OSC_OUT) xlimit 0 0.2
+plot v(OSC_OUT) xlimit 1.90 1.92
+
+meas tran vmax MAX v(OSC_OUT) FROM=1.5s TO=2s
+meas tran vmin MIN v(OSC_OUT) FROM=1.5s TO=2s
+meas tran vpp PP v(OSC_OUT) FROM=1.5s TO=2s
+
+meas tran period TRIG v(OSC_OUT) VAL=0 RISE=1000 TARG v(OSC_OUT) VAL=0 RISE=1001
+let freq = 1/period
+print freq
+
+write rc_phase_shift_oscillator.raw
+wrdata rc_phase_shift_oscillator.csv time v(OSC_OUT) v(collector) v(base) v(fb1) v(fb2)
+
+.endc
+
+.end

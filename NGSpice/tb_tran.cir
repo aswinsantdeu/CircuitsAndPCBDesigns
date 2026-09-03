@@ -1,0 +1,126 @@
+*======================================================
+*tb_tran.cir
+*Transient Switching verification for 3.3V CMOS inverter
+*======================================================
+
+.include "cmos_inverter_3p3.sub"
+
+** PARAM/OPTIONS section **
+
+.param temp=25
+.param AVDD_VAL=3.3
+.param CL_VAL=100f
+
+**Instantiation section **
+VDD avdd 0 DC {AVDD_VAL}
+VIN vin 0 PULSE(0 {AVDD_VAL} 1n 500p 500p 5n 10n)
+
+XINV vin vout avdd 0 cmos_inverter_3p3
+CL vout 0 {CL_VAL}
+
+**Analysis section **
+.control
+set filetype=ascii
+set wr_singlescale
+set appendwrite
+
+echo "========================================="
+echo "Running transient switching simulation"
+echo "Input pulse: 0V to 3.3V, TD=1ns, TR=500ps, TF=500ps, PW=5ns, PER=10ns"
+echo "====================================="
+
+tran 10p 50n
+
+**Measurements section **
+
+let IDD_abs = abs(i(VDD))
+
+*Propagation delays at 50% AVDD = 1.65V
+meas tran tPHL TRIG v(vin) VAL=1.65 RISE=2 TARG v(vout) VAL=1.65 FALL=2
+meas tran tPLH TRIG v(vin) VAL=1.65 FALL=2 TARG v(vout) VAL=1.65 RISE=2
+
+* Output rise fall times from 10% to 90% and 90% to 10%
+meas tran trise TRIG v(vout) VAL=0.33 RISE=2 TARG v(vout) VAL=2.97 RISE=2
+meas tran tfall TRIG v(vout) VAL=2.97 FALL=2 TARG v(vout) VAL=0.33 FALL=2
+
+*Output swing and switching currents checks
+meas tran VOUT_min MIN v(vout) FROM=10n TO=50n
+meas tran VOUT_max MAX v(vout) FROM=10n TO=50n
+meas tran IDD_peak MAX IDD_abs FROM=10n TO=50n
+meas tran IDD_avg AVG IDD_abs FROM=10n TO=50n
+
+** Report section **
+echo "====================================="
+echo "Transient simulation measurements"
+echo "====================================="
+
+print tPHL
+print tPLH
+print trise
+print tfall
+print VOUT_min
+print VOUT_max
+print IDD_peak
+print IDD_avg
+
+
+echo "" >> cmos_inverter_measurements.csv
+echo "SECTION,Transient Measurements,,,,,,," >> cmos_inverter_measurements.csv
+echo "" >> cmos_inverter_measurements.csv
+
+echo "tPHL,$&tPHL,s,tran,50% propagation delay high-to-low,Ngspice .meas,tb_tran.cir,pass" >> cmos_inverter_measurements.csv
+
+echo "tPLH,$&tPLH,s,tran,50% propagation delay low-to-high,Ngspice .meas,tb_tran.cir,pass" >> cmos_inverter_measurements.csv
+
+echo "trise,$&trise,s,tran,10%-90% output rise time,Ngspice .meas,tb_tran.cir,pass" >> cmos_inverter_measurements.csv
+
+echo "tfall,$&tfall,s,tran,90%-10% output fall time,Ngspice .meas,tb_tran.cir,pass" >> cmos_inverter_measurements.csv
+
+echo "VOUT_min,$&VOUT_min,V,tran,minimum output voltage,Ngspice .meas,tb_tran.cir,pass" >> cmos_inverter_measurements.csv
+
+echo "VOUT_max,$&VOUT_max,V,tran,maximum output voltage,Ngspice .meas,tb_tran.cir,pass" >> cmos_inverter_measurements.csv
+
+echo "IDD_peak,$&IDD_peak,A,tran,peak supply current,Ngspice .meas,tb_tran.cir,pass" >> cmos_inverter_measurements.csv
+
+echo "IDD_avg,$&IDD_avg,A,tran,average supply current,Ngspice .meas,tb_tran.cir,pass" >> cmos_inverter_measurements.csv
+
+
+* Export final transient CSV with exact required schema
+echo "time_s,VIN_V,VOUT_V,IDD_abs_A" > transient_waveforms.csv
+
+let npts = length(time)
+let idx = 0
+
+while idx < npts
+  let time_i = time[idx]
+  let vin_i = v(vin)[idx]
+  let vout_i = v(vout)[idx]
+  let idd_i = IDD_abs[idx]
+
+  echo "$&time_i,$&vin_i,$&vout_i,$&idd_i" >> transient_waveforms.csv
+
+  let idx = idx + 1
+end
+
+plot v(vin) v(vout) title "Transient: VIN and VOUT vs time"
+plot IDD_abs title "Transient Supply Current: IDD_abs vs time"
+
+echo "====================================="
+echo "Transient simulation complete."
+echo "Generated:"
+echo "  transient_waveforms.csv"
+echo "====================================="
+
+.endc
+.end
+
+
+
+
+
+
+
+
+
+
+

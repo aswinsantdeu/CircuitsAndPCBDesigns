@@ -1,0 +1,13 @@
+Input sweep
+Vin in 0 DC 0
+R1 in out 14k
+R2 out 0 10k
+
+.dc Vin 0 15 0.5
+
+.control
+run
+plot v(out)
+.endc
+
+.end

@@ -1,0 +1,56 @@
+
+* Voltage scaling stage for microcontroller input
+V Vin 0 DC 12
+
+****************************************************
+* Divider design
+* Rtop = 10 kOhm
+* Rbottom = 6.8 kOhm
+*
+* Ideal no-load output:
+* Vout = Vin * Rbottom / (Rtop + Rbottom)
+*      = 12 * 6.8k / (10k + 6.8k)
+*      = 4.857 V
+****************************************************
+
+* -------- No-load condition --------
+* Load is effectively disconnected using a very large resistor
+R1_NL vin vout_no_load 10k
+R2_NL vout_no_load 0 6.8k
+RLOAD_NL vout_no_load 0 1G
+
+* -------- Loaded condition --------
+* Load selected inside required range: 4.7 kOhm
+R1_L vin vout_loaded 10k
+R2_L vout_loaded 0 6.8k
+RLOAD_L vout_loaded 0 4.7k
+
+* -------- Load sweep circuit --------
+* Used to evaluate Vout variation from 1 kOhm to 10 kOhm
+R1_SW vin vout_sweep 10k
+R2_SW vout_sweep 0 6.8k
+RLOAD_SW vout_sweep 0 1k
+
+.op
+
+.control
+run
+
+echo ==============================
+echo DC Operating Point Results
+echo ==============================
+print v(vin)
+print v(vout_no_load)
+print v(vout_loaded)
+
+echo ==============================
+echo Load Sweep: RLOAD = 1k to 10k
+echo ==============================
+dc RLOAD_SW 1k 10k 1k
+print v(vout_sweep)
+
+plot v(vout_sweep)
+
+.endc
+
+.end

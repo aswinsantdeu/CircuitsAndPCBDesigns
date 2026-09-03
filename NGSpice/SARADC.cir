@@ -1,0 +1,108 @@
+* =========================================================
+* 4-bit Behavioral SAR ADC in NGSpice
+* ---------------------------------------------------------
+* Blocks:
+* Vin -> Sample/Hold (simplified as direct held input)
+*      -> Behavioral DAC
+*      -> Ideal comparator
+*      -> SAR bit trial timing
+*
+* This version uses time-windowed bit decisions.
+* It is meant for learning the SAR process.
+* =========================================================
+
+.param VREF=1.0
+.param VINDC=0.68
+
+* Input signal
+Vin in 0 DC {VINDC}
+
+* ---------------------------------------------------------
+* Clocking windows for 4 SAR decisions
+* Each bit gets one time slot
+* ---------------------------------------------------------
+Vclk clk 0 PULSE(0 1 0n 1n 1n 10n 20n)
+
+* Bit trial windows
+Vb3win b3win 0 PULSE(0 1 1n 1n 1n 4n 40n)
+Vb2win b2win 0 PULSE(0 1 11n 1n 1n 4n 40n)
+Vb1win b1win 0 PULSE(0 1 21n 1n 1n 4n 40n)
+Vb0win b0win 0 PULSE(0 1 31n 1n 1n 4n 40n)
+
+* ---------------------------------------------------------
+* SAR decision storage nodes
+* We use capacitors to hold the logic state approximately
+* and behavioral sources to update them during their window
+* ---------------------------------------------------------
+Cb3 b3 0 1p
+Cb2 b2 0 1p
+Cb1 b1 0 1p
+Cb0 b0 0 1p
+
+Rb3 b3 0 1G
+Rb2 b2 0 1G
+Rb1 b1 0 1G
+Rb0 b0 0 1G
+
+* ---------------------------------------------------------
+* DAC output from SAR bits
+* 4-bit binary weighted DAC
+* DAC = VREF*(b3/2 + b2/4 + b1/8 + b0/16)
+* where each bit node is ~0 or ~1 V
+* ---------------------------------------------------------
+Bdac vdac 0 V = { VREF*( V(b3)/2 + V(b2)/4 + V(b1)/8 + V(b0)/16 ) }
+
+* Comparator output: high if Vin > Vdac
+Bcmp cmp 0 V = { if(V(in) > V(vdac), 1, 0) }
+
+* ---------------------------------------------------------
+* SAR update equations
+*
+* b3 decision:
+* during b3 window, try MSB = 1 if cmp says Vin > trial DAC
+*
+* For later bits, keep old higher bits, try current bit = 1
+* then decide by comparator
+* ---------------------------------------------------------
+
+* Trial DACs for each stage
+Btrial3 trial3 0 V = { VREF*(1/2) }
+
+Btrial2 trial2 0 V = { VREF*( V(b3)/2 + 1/4 ) }
+
+Btrial1 trial1 0 V = { VREF*( V(b3)/2 + V(b2)/4 + 1/8 ) }
+
+Btrial0 trial0 0 V = { VREF*( V(b3)/2 + V(b2)/4 + V(b1)/8 + 1/16 ) }
+
+* Stage comparators
+Bcmp3 cmp3 0 V = { if(V(in) > V(trial3), 1, 0) }
+Bcmp2 cmp2 0 V = { if(V(in) > V(trial2), 1, 0) }
+Bcmp1 cmp1 0 V = { if(V(in) > V(trial1), 1, 0) }
+Bcmp0 cmp0 0 V = { if(V(in) > V(trial0), 1, 0) }
+
+* Update bit nodes only in their active windows
+Bset3 b3 0 V = { if(V(b3win)>0.5, V(cmp3), V(b3)) }
+Bset2 b2 0 V = { if(V(b2win)>0.5, V(cmp2), V(b2)) }
+Bset1 b1 0 V = { if(V(b1win)>0.5, V(cmp1), V(b1)) }
+Bset0 b0 0 V = { if(V(b0win)>0.5, V(cmp0), V(b0)) }
+
+* Small resistors to avoid floating-source issues
+Riso3 b3 0 1MEG
+Riso2 b2 0 1MEG
+Riso1 b1 0 1MEG
+Riso0 b0 0 1MEG
+
+* ---------------------------------------------------------
+* Outputs for observation
+* ---------------------------------------------------------
+Bcode code 0 V = { 8*V(b3) + 4*V(b2) + 2*V(b1) + V(b0) }
+
+.control
+tran 0.1n 40n
+plot v(in) v(trial3) v(trial2) v(trial1) v(trial0)
+plot v(b3) v(b2)+1.5 v(b1)+3 v(b0)+4.5
+plot v(vdac) v(in)
+print v(b3) v(b2) v(b1) v(b0) v(code)
+.endc
+
+.end

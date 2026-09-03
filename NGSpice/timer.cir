@@ -1,0 +1,45 @@
+* Timer.cir
+* 1 Hz discrete active-low/collector clock using two BC546 transistors
+* Supply node: vcc = 10 V DC
+* Output node: clk_out
+* Q1 and Q2 form the cross-coupled astable oscillator
+* IRFP240.mod is included as a provided model file, but the IRFP240 device is not required for this low-current clock output
+
+
+.include "BC546.mod"
+.include "IRFP240.mod"
+
+.options method=gear reltol=1e-5 abstol=1e-12 vntol=1e-6
+
+* Single allowed 10 V DC source
+VCC vcc 0 DC 10
+
+* Collector loads and BC546 astable transistor pair
+RC1 vcc c1 10k
+RC2 vcc clk_out 10k
+Q1 c1 b1 0 BC546
+Q2 clk_out b2 0 BC546
+
+* E24 timing network for approximately 1 Hz clock
+RB1 vcc b1 720k
+RB2 vcc b2 720k
+C1 clk_out b1 1u
+C2 c1 b2 1u
+
+* Small initial condition only  starts the analog oscillator in simulation
+.ic v(b1)=0 v(b2)=0.8 v(c1)=0 v(clk_out)=10
+
+* 10 second transient run with 1 ms maximum timestep for at least 100 samples per 1 s period
+.tran 1m 10s 0 1m uic
+
+.control
+run
+plot v(clk_out) xlimit 0 10
+
+meas tran v_high MAX v(clk_out) FROM=2s TO=10s
+meas tran v_low MIn v(clk_out) FROM=2s TO=10s
+meas tran t_period TRIG v(clk_out) VAL=5 TD=2s RISE=1 TARG v(clk_out) VAL=5 TD=2s RISE=2
+let f_clk = 1/t_period
+print v_high v_low t_period f_clk
+.endc
+.end
