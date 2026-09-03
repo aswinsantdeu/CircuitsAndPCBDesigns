@@ -1,0 +1,189 @@
+(footprint "MWSA1004S-150MT"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 0 -6 0)
+		(layer "F.SilkS")
+		(uuid "9305edf5-d3cf-47f4-8a88-34761156c1aa")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "MWSA1004S-150MT"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "7237b69e-3f53-4df8-97c2-25237168b30b")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "d5ea59aa-cb81-49e1-b9a9-744ac8f39183")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "8c690756-4c1a-4105-93ae-22112a75209d")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -5.726 -5.076)
+		(end -5.74 -1.981)
+		(stroke
+			(width 0.152)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "adb057eb-6f25-4a25-9b5c-5bd59937582d")
+	)
+	(fp_line
+		(start -5.726 5.076)
+		(end -5.713 1.993)
+		(stroke
+			(width 0.152)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "72427729-3a1c-4109-b561-398bffff83da")
+	)
+	(fp_line
+		(start 5.726 -5.076)
+		(end -5.726 -5.076)
+		(stroke
+			(width 0.152)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "4e8a1250-d52c-484c-a285-2cb8919d3720")
+	)
+	(fp_line
+		(start 5.726 5.076)
+		(end -5.726 5.076)
+		(stroke
+			(width 0.152)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "d341db0a-a2ad-40c4-b4c5-a1247c01742f")
+	)
+	(fp_line
+		(start 5.736 -2.102)
+		(end 5.726 -5.076)
+		(stroke
+			(width 0.152)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "de04109e-425f-4c0e-8c98-0faa2a4590a5")
+	)
+	(fp_line
+		(start 5.754 2.055)
+		(end 5.726 5.076)
+		(stroke
+			(width 0.152)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "4c2f7e92-713a-434e-806f-bf280fff0d68")
+	)
+	(fp_circle
+		(center -5.75 5)
+		(end -5.72 5)
+		(stroke
+			(width 0.06)
+			(type solid)
+		)
+		(fill no)
+		(layer "Eco2.User")
+		(uuid "5655aa41-ef07-49f4-9bd4-fd85ab1e3ad2")
+	)
+	(fp_line
+		(start -5.75 -5)
+		(end 5.75 -5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "64062e15-86d7-4917-b1ca-9889ca79456c")
+	)
+	(fp_line
+		(start -5.75 5)
+		(end -5.75 -5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "ba20049a-a33d-4736-821d-12900e576686")
+	)
+	(fp_line
+		(start 5.75 -5)
+		(end 5.75 5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "15a11901-986e-4197-beff-79ef6dd80451")
+	)
+	(fp_line
+		(start 5.75 5)
+		(end -5.75 5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "f94f00df-9cd2-429a-bd6f-7014a2f9c3db")
+	)
+	(pad "1" smd rect
+		(at -5.18 0 180)
+		(size 2.924 3.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "5123807a-49a6-4952-940f-7a540cf77b40")
+	)
+	(pad "2" smd rect
+		(at 5.18 0 180)
+		(size 2.924 3.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "d6e4d926-53f2-4413-b1f9-470626d3a466")
+	)
+	(embedded_fonts no)
+	(model "C:/Users/einst/Desktop/Kicad Projects/PROJECTS/Fiverr Client akileino PCB Design/Libraries/PCB Footprints/PCB Footprints.3D/MWSA1004S-150MT.STEP"
+		(offset
+			(xyz 0 0 0.2)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz -90 -0 90)
+		)
+	)
+)
